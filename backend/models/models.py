@@ -2,21 +2,34 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-
 class MRData(db.Model):
     __tablename__ = 'MR_data'
-    drg_definition = db.Column(db.String(50))
-    provider_id = db.Column(db.String(50), primary_key=True)
-    provider_name = db.Column(db.String(50))
-    provider_street_address = db.Column(db.String(50))
-    provider_city = db.Column(db.String(50))
-    provider_state = db.Column(db.String(50))
-    provider_zip_code = db.Column(db.String(50))
-    hospital_referral_region_description = db.Column(db.String(50))
-    total_discharges = db.Column(db.String(50))
-    average_covered_charges = db.Column(db.String(50))
-    average_total_payments = db.Column(db.String(50))
-    average_medicare_payments = db.Column(db.String(50))
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100))
+    author = db.Column(db.String(50))
+    service_type = db.Column(db.String(50))
+    defect_in_file_line = db.Column(db.String(50))
+    defect_description = db.Column(db.String(200))
+    defect_type = db.Column(db.String(50))
+    defect_severity = db.Column(db.String(50))
+    create_date = db.Column(db.DateTime)
+    resolve_date = db.Column(db.DateTime)
+    detected_by = db.Column(db.String(50))
+    resolved_by = db.Column(db.String(50))
+    discussions = db.relationship('Discussion', backref='merge_request', lazy=True)
 
     def __repr__(self):
-        return f"<MRData(provider_id='{self.provider_id}', drg_definition='{self.drg_definition}', provider_name='{self.provider_name}', provider_street_address='{self.provider_street_address}', provider_city='{self.provider_city}', provider_state='{self.provider_state}', provider_zip_code='{self.provider_zip_code}', hospital_referral_region_description='{self.hospital_referral_region_description}', total_discharges='{self.total_discharges}', average_covered_charges='{self.average_covered_charges}', average_total_payments='{self.average_total_payments}', average_medicare_payments='{self.average_medicare_payments}')>"
+        return f"<MRData(id='{self.id}', title='{self.title}', author='{self.author}', " \
+               f"service_type='{self.service_type}', defect_in_file_line='{self.defect_in_file_line}', " \
+               f"defect_description='{self.defect_description}', defect_type='{self.defect_type}', " \
+               f"defect_severity='{self.defect_severity}', create_date='{self.create_date}', " \
+               f"resolve_date='{self.resolve_date}', detected_by='{self.detected_by}', " \
+               f"resolved_by='{self.resolved_by}')>"
+
+class Discussion(db.Model):
+    __tablename__ = 'discussions'
+    id = db.Column(db.Integer, primary_key=True)
+    merge_request_id = db.Column(db.Integer, db.ForeignKey('MR_data.id'))
+    defect_type_label = db.Column(db.String(50))
+    defect_severity = db.Column(db.String(50))
+    detail = db.Column(db.String(200))
