@@ -66,7 +66,7 @@ with app.app_context():
         print("No data in MRData table.")
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=8000, debug=True)
 
 
 
