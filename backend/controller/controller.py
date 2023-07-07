@@ -6,7 +6,6 @@ from dateutil.parser import isoparse
 from apscheduler.schedulers.background import BackgroundScheduler
 from .helper import extract_info_from_title, extract_info_from_discussion
 from sqlalchemy import extract, func, desc
-from sqlalchemy.sql import text
 
 # Create the database and tables
 bp = Blueprint('controller', __name__)
@@ -105,7 +104,7 @@ def get_defects():
         category = request.args.get('category', default='Author', type=str)
 
         if interval not in ['Year', 'Quarter', 'Month', 'Week'] or \
-                category not in ['Author', 'Detected by', 'Defects Type', 'Defect Severity', 'Trending']:
+                category not in ['Author', 'Detected by', 'Defect Type', 'Defect Severity', 'Trending']:
             return jsonify({'error': 'Invalid interval or category'})
 
         # Get the current date
@@ -113,13 +112,11 @@ def get_defects():
 
         # Define the interval ranges based on the current date
         if interval == 'Year':
-            interval_range = func.year(MRData.create_date)
-        elif interval == 'Quarter':
-            interval_range = func.concat(func.year(MRData.create_date), '-', func.quarter(MRData.create_date))
-        elif interval == 'Month':
             interval_range = func.concat(func.year(MRData.create_date), '-', func.month(MRData.create_date))
-        else:  # interval == 'Week'
+        elif interval == 'Quarter' or interval == 'Month':
             interval_range = func.concat(func.year(MRData.create_date), '-', func.week(MRData.create_date))
+        else:  # interval == 'Week'
+            interval_range = func.concat(func.year(MRData.create_date), '-', func.month(MRData.create_date), '-', func.day(MRData.create_date))
 
         # Build the query to fetch the defect data
         if category == 'Trending':
@@ -132,10 +129,12 @@ def get_defects():
                 group_by_column = MRData.author
             elif category == 'Detected by':
                 group_by_column = MRData.detected_by
-            elif category == 'Defects Type':
+            elif category == 'Defect Type':
                 group_by_column = MRData.defect_type
-            else:  # category == 'Defect Severity'
+            elif category == 'Defect Severity':
                 group_by_column = MRData.defect_severity
+            elif category == 'Service':  # This is assuming that service_type is the relevant field for Service category
+                group_by_column = MRData.service_type
 
             query = db.session.query(interval_range.label('interval'), group_by_column.label('category'),
                                      func.count().label('count')). \
@@ -154,9 +153,7 @@ def get_defects():
 
         return jsonify(output)
     except Exception as e:
-            return jsonify({'error': str(e)})
-
-    
+        return jsonify({'error': str(e)})
 
 @bp.route('/merge_requests/<int:merge_request_id>/discussions', methods=['GET'])
 def get_merge_request_discussions(merge_request_id):
