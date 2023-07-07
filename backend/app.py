@@ -2,52 +2,55 @@ from flask import Flask
 from models.models import db, MRData, Discussion
 from controller.controller import bp
 from datetime import datetime
+from flask_cors import CORS
+from flask_migrate import Migrate
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Counterstrike123@localhost/MR_data'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable modification tracking
-app.config['SECRET_KEY'] = 'mysecretkey'
 
 db.init_app(app)
+
+migrate = Migrate(app, db)
 
 app.register_blueprint(bp, url_prefix='/')
 
 # Create the database and tables
 with app.app_context():
     db.create_all()
-    # mr1 = MRData(
-    # title="Merge Request 1",
-    # author="John Doe",
-    # service_type="Service 1",
-    # defect_in_file_line="app.py: line 10",
-    # defect_description="Fix a bug in the login functionality",
-    # defect_type="Bug",
-    # defect_severity="High",
+
+    # mr5 = MRData(
+    # title="Merge Request 5",
+    # author="Emma Davis",
+    # service_type="Service 2",
+    # defect_in_file_line="app.py: line 50",
+    # defect_description="Add unit tests for module X",
+    # defect_type="Testing",
+    # defect_severity="Medium",
     # create_date=datetime.now(),
     # resolve_date=datetime.now(),
-    # detected_by="Jane Smith",
-    # resolved_by="John Doe"
+    # detected_by="Emma Davis",
+    # resolved_by="Emma Davis"
     # )
 
-    # # Create discussions for the merge request
     # discussion1 = Discussion(
-    #     defect_type_label="Security",
+    #     defect_type_label="Testing",
     #     defect_severity="Medium",
-    #     detail="Discussing security implications of the bug fix"
+    #     detail="Discussing test coverage for module X"
     # )
 
     # discussion2 = Discussion(
-    #     defect_type_label="Testing",
-    #     defect_severity="Low",
-    #     detail="Discussing testing approach for the bug fix"
+    #     defect_type_label="Unit Testing",
+    #     defect_severity="Medium",
+    #     detail="Discussing specific unit test cases"
     # )
 
-    # # Associate the discussions with the merge request
-    # mr1.discussions.append(discussion1)
-    # mr1.discussions.append(discussion2)
+    # mr5.discussions.append(discussion1)
+    # mr5.discussions.append(discussion2)
 
-    # # Add the merge request and discussions to the database
-    # db.session.add(mr1)
+    # db.session.add(mr5)
     # db.session.commit()
 
 with app.app_context():
@@ -66,7 +69,8 @@ with app.app_context():
         print("No data in MRData table.")
 
 if __name__ == '__main__':
-    app.run(port=8000, debug=True)
+    app.run(port=5000, debug=True)
+
 
 
 

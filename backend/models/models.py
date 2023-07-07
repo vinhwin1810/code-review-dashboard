@@ -32,4 +32,4 @@ class Discussion(db.Model):
     merge_request_id = db.Column(db.Integer, db.ForeignKey('MR_data.id'))
     defect_type_label = db.Column(db.String(50))
     defect_severity = db.Column(db.String(50))
-    detail = db.Column(db.String(200))
+    detail = db.Column(db.String(1000))
