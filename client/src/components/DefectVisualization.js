@@ -27,13 +27,7 @@ function DefectVisualization() {
           category: category,
         },
       });
-      console.log("API response:", response.data);
-      if (Array.isArray(response.data)) {
-        setDefectData(response.data);
-      } else {
-        console.error("API response is not an array:", response.data);
-        setDefectData([]);
-      }
+      setDefectData(response.data);
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching defect data:", error);
@@ -47,20 +41,31 @@ function DefectVisualization() {
       }
 
       if (category === "Trending") {
+        const sortedData = defectData.sort((a, b) => a.interval - b.interval); // Sort data based on 'interval' field
+        const labels = sortedData.map((item) => item.interval);
+        const data = sortedData.map((item) => item.count);
+
         const newLineChartInstance = new Chart(lineChartContainer.current, {
           type: "line",
           data: {
-            labels: defectData.map((item) => item.interval),
+            labels: labels,
             datasets: [
               {
                 label: "Total Defects",
-                data: defectData.map((item) => item.count),
+                data: data,
                 fill: false,
                 borderColor: "rgba(255, 99, 132, 0.2)",
               },
             ],
           },
-          options: { responsive: true },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true, // Start the y-axis from 0
+              },
+            },
+          },
         });
 
         setLineChartInstance(newLineChartInstance);
@@ -73,25 +78,38 @@ function DefectVisualization() {
       }
 
       if (category !== "Trending") {
-        const groupedData = defectData.reduce((acc, item) => {
-          if (!acc[item.category]) {
-            acc[item.category] = [];
+        const groupedData = defectData.reduce((accumulator, item) => {
+          const key = item.category;
+          if (!accumulator[key]) {
+            accumulator[key] = 0;
           }
-          acc[item.category].push(item.count);
-          return acc;
+          accumulator[key] += item.count;
+          return accumulator;
         }, {});
+
+        const labels = Object.keys(groupedData);
+        const data = Object.values(groupedData);
 
         const newBarChartInstance = new Chart(barChartContainer.current, {
           type: "bar",
           data: {
-            labels: Object.keys(groupedData),
-            datasets: Object.entries(groupedData).map(([key, value]) => ({
-              label: key,
-              data: value,
-              backgroundColor: "rgba(255, 99, 132, 0.2)",
-            })),
+            labels: labels,
+            datasets: [
+              {
+                label: category,
+                data: data,
+                backgroundColor: "rgba(255, 99, 132, 0.2)",
+              },
+            ],
           },
-          options: { responsive: true },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true, // Start the y-axis from 0
+              },
+            },
+          },
         });
 
         setBarChartInstance(newBarChartInstance);
@@ -103,7 +121,7 @@ function DefectVisualization() {
     <div>Loading...</div>
   ) : (
     <div className="flex flex-row items-start justify-center">
-      <div className="flex flex-col items-center mr-4">
+      <div className="flex flex-col items-center mr-4 pr-4">
         <div className="flex flex-row items-center mb-4">
           <label htmlFor="interval" className="mr-2">
             Interval:
@@ -121,16 +139,16 @@ function DefectVisualization() {
           </select>
         </div>
         {category === "Trending" ? (
-          <div className="w-full max-w-2xl mb-4">
+          <div className="w-full max-w-3xl mb-4">
             <canvas ref={lineChartContainer} className="w-120 h-96" />
           </div>
         ) : (
-          <div className="w-full max-w-2xl mb-4">
+          <div className="w-full max-w-3xl mb-4">
             <canvas ref={barChartContainer} className="w-120 h-96" />
           </div>
         )}
       </div>
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center pr-4">
         <div className="flex flex-row items-center mb-4">
           <label htmlFor="category" className="mr-2">
             Category:
