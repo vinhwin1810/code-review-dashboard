@@ -121,7 +121,7 @@ function DefectVisualization() {
     <div>Loading...</div>
   ) : (
     <div className="flex flex-row items-start justify-center">
-      <div className="flex flex-col items-center mr-4 pr-4">
+      <div className="flex flex-row items-start mr-4 pr-4">
         <div className="flex flex-row items-center mb-4">
           <label htmlFor="interval" className="mr-2">
             Interval:

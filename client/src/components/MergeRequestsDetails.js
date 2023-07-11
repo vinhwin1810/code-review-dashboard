@@ -1,10 +1,40 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { DataGrid } from "@mui/x-data-grid";
+
+const columns = [
+  { field: "title", headerName: "Title", flex: 1 },
+  { field: "author", headerName: "Author", flex: 1 },
+  { field: "service_type", headerName: "Service Type", flex: 1 },
+  { field: "create_date", headerName: "Create Date", flex: 0.8 },
+  { field: "resolve_date", headerName: "Resolve Date", flex: 0.8 },
+  { field: "defect_severity", headerName: "Defect Severity", flex: 1 },
+  { field: "detected_by", headerName: "Detected By", flex: 1 },
+  {
+    field: "discussions",
+    headerName: "Discussion Details",
+    flex: 4,
+    renderCell: (params) => {
+      return (
+        <div style={{ overflow: "auto" }}>
+          {params.value.map((discussion, index) => (
+            <p key={index}>
+              <span className="font-semibold">
+                [{discussion.defect_type_label}]
+              </span>
+              <span className="ml-1">[{discussion.defect_severity}]</span>
+              <span className="ml-1">{discussion.detail}</span>
+            </p>
+          ))}
+        </div>
+      );
+    },
+  },
+];
 
 function MergeRequestsDetails() {
   const [mergeRequests, setMergeRequests] = useState([]);
   const [discussions, setDiscussions] = useState([]); // state variable to hold discussions
-  const [selectedMR, setSelectedMR] = useState(null); // state variable to hold the selected MR
 
   useEffect(() => {
     axios
@@ -15,93 +45,17 @@ function MergeRequestsDetails() {
       );
   }, []);
 
-  const handleRowClick = (mr) => {
-    setSelectedMR(mr);
-    axios
-      .get(`/merge_requests/${mr.id}/discussions`)
-      .then((response) => setDiscussions(response.data))
-      .catch((error) =>
-        console.error(
-          `Error fetching discussions for merge request ${mr.id}:`,
-          error
-        )
-      );
-  };
-
   return (
-    <div>
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Title
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Author
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Service Type
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Create Date
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Resolve Date
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Defect Severity
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Detected By
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Discussion Details
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {mergeRequests.map((mr, index) => (
-            <tr
-              key={index}
-              onClick={() => handleRowClick(mr)}
-              className="cursor-pointer hover:bg-gray-200"
-            >
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {mr.title}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {mr.author}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {mr.service_type}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {mr.create_date}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {mr.resolve_date}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {mr.defect_severity}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {mr.detected_by}
-              </td>
-              <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-h-[100px] overflow-auto">
-                {mr.discussions.map((discussion, index) => (
-                  <p key={index} className="mb-2">
-                    <span className="font-semibold">
-                      [{discussion.defect_type_label}]
-                    </span>
-                    <span className="ml-1">[{discussion.defect_severity}]</span>
-                    <span className="ml-1">{discussion.detail}</span>
-                  </p>
-                ))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ height: "100%", width: "100%" }}>
+      <DataGrid
+        rows={mergeRequests}
+        columns={columns}
+        rowsPerPageOptions={[5, 10, 20]}
+        getRowId={(row) => row.title}
+        pagination
+        rowHeight={100}
+      />
+
       <div className="mt-8">
         {discussions.map((discussion, index) => (
           <div
