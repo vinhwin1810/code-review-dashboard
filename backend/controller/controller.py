@@ -1,23 +1,10 @@
-from flask import jsonify, request, Blueprint
+from flask import jsonify, request
 from models.models import MRData, Discussion, db
 from gitlab import Gitlab
 from datetime import datetime
 from dateutil.parser import isoparse
-from apscheduler.schedulers.background import BackgroundScheduler
 from .helper import extract_info_from_title, extract_info_from_discussion
-from sqlalchemy import extract, func, desc
-
-# Create the database and tables
-bp = Blueprint('controller', __name__)
-
-# Initialize the scheduler
-scheduler = BackgroundScheduler()
-scheduler.start()
-
-@bp.route('/', methods=['GET'])
-def home():
-   return jsonify({'message': 'MR Data API'})
-
+from sqlalchemy import func
 
 def fetch_merge_requests():
     # Create a GitLab client instance
@@ -61,13 +48,6 @@ def fetch_merge_requests():
     # Commit the changes to the database
     db.session.commit()
 
-# Schedule the function to run every day
-scheduler.add_job(fetch_merge_requests, 'interval', days=1)
-
-from flask import jsonify
-from datetime import datetime
-
-@bp.route('/merge_requests', methods=['GET'])
 def get_merge_requests():
     try:
         merge_requests = MRData.query.all()
@@ -96,15 +76,13 @@ def get_merge_requests():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-@bp.route('/defects', methods=['GET'])
 def get_defects():
     try:
         interval = request.args.get('interval', default='Month', type=str)
         category = request.args.get('category', default='Author', type=str)
 
         if interval not in ['Year', 'Quarter', 'Month', 'Week'] or \
-                category not in ['Author', 'Detected by', 'Defect Type', 'Defect Severity', 'Trending']:
+                category not in ['Author', 'Detected by', 'Defect Type', 'Defect Severity', 'Trending', 'Service']:
             return jsonify({'error': 'Invalid interval or category'})
 
         # Get the current date
@@ -117,6 +95,9 @@ def get_defects():
             interval_range = func.concat(func.year(MRData.create_date), '-', func.week(MRData.create_date))
         else:  # interval == 'Week'
             interval_range = func.concat(func.year(MRData.create_date), '-', func.month(MRData.create_date), '-', func.day(MRData.create_date))
+
+        # Define a default value for group_by_column
+        group_by_column = None
 
         # Build the query to fetch the defect data
         if category == 'Trending':
@@ -135,6 +116,10 @@ def get_defects():
                 group_by_column = MRData.defect_severity
             elif category == 'Service':  # This is assuming that service_type is the relevant field for Service category
                 group_by_column = MRData.service_type
+
+            # Check if group_by_column is not None
+            if group_by_column is None:
+                return jsonify({'error': 'Invalid category'})
 
             query = db.session.query(interval_range.label('interval'), group_by_column.label('category'),
                                      func.count().label('count')). \
@@ -155,7 +140,6 @@ def get_defects():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-@bp.route('/merge_requests/<int:merge_request_id>/discussions', methods=['GET'])
 def get_merge_request_discussions(merge_request_id):
     try:
         # Query database for discussions associated with the merge_request_id

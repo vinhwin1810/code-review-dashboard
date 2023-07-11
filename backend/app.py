@@ -1,6 +1,6 @@
 from flask import Flask
 from models.models import db, MRData, Discussion
-from controller.controller import bp
+from api.api import bp
 from datetime import datetime
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -53,20 +53,20 @@ with app.app_context():
     # db.session.add(mr5)
     # db.session.commit()
 
-with app.app_context():
-    session = db.session
+# with app.app_context():
+#     session = db.session
 
-    # Query the MRData table to retrieve all records
-    all_records = session.query(MRData).all()
+#     # Query the MRData table to retrieve all records
+#     all_records = session.query(MRData).all()
 
-    if all_records:
-        # Records were found
-        print("Data in MRData table:")
-        for record in all_records:
-            print(record)
-    else:
-        # No records found
-        print("No data in MRData table.")
+#     if all_records:
+#         # Records were found
+#         print("Data in MRData table:")
+#         for record in all_records:
+#             print(record)
+#     else:
+#         # No records found
+#         print("No data in MRData table.")
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
