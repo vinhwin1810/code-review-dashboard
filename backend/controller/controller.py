@@ -114,7 +114,7 @@ def get_defects():
                 group_by_column = MRData.defect_type
             elif category == 'Defect Severity':
                 group_by_column = MRData.defect_severity
-            elif category == 'Service':  # This is assuming that service_type is the relevant field for Service category
+            elif category == 'Service':
                 group_by_column = MRData.service_type
 
             # Check if group_by_column is not None
