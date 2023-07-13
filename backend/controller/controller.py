@@ -1,3 +1,5 @@
+import os
+
 from flask import jsonify, request
 from models.models import MRData, Discussion, db
 from gitlab import Gitlab
@@ -8,12 +10,12 @@ from sqlalchemy import func
 
 def fetch_merge_requests():
     # Create a GitLab client instance
-    gitlab_url = 'https://gitlab.com'
-    gitlab_token = 'glpat-iKkxcphBJLKyzZdrTYMt'
+    gitlab_url = os.getenv('GITLAB_URL')
+    gitlab_token = os.getenv('GITLAB_TOKEN')
     gl = Gitlab(gitlab_url, private_token=gitlab_token)
 
     # Fetch merge requests from the project
-    project_id = '47457661'
+    project_id = "47457661"
     project = gl.projects.get(project_id)
     merge_requests = project.mergerequests.list(state='merged')
 

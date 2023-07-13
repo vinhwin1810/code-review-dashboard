@@ -4,6 +4,7 @@ from api.api import bp
 from datetime import datetime
 from flask_cors import CORS
 from flask_migrate import Migrate
+from gitlab import Gitlab
 
 def create_app(config):
     app = Flask(__name__)
