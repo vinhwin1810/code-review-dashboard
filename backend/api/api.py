@@ -9,6 +9,7 @@ import atexit
 bp = Blueprint('controller', __name__)
 
 def fetch_data():
+    fetch_merge_requests() #DELETE THIS LINE AFTER RUNNING ONCE
     scheduler = BackgroundScheduler()
 
 # Schedule the function to run every day at 00:00 (midnight)

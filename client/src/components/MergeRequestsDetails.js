@@ -38,7 +38,7 @@ function MergeRequestsDetails() {
 
   useEffect(() => {
     axios
-      .get("/merge_requests")
+      .get(`${process.env.REACT_APP_API_URL}/merge_requests`)
       .then((response) => setMergeRequests(response.data))
       .catch((error) =>
         console.error("Error fetching merge request data:", error)

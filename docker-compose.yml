@@ -3,8 +3,8 @@ services:
   db:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: <MYSQL_ROOT_PASSWORD>
-      MYSQL_DATABASE: MR_data
+      MYSQL_ROOT_PASSWORD: <YOUR_PASSWORD>
+      MYSQL_DATABASE: MR_data #YOUR DATABASE NAME SHOULD BE MR_data
     volumes:
       - db_data:/var/lib/mysql
 
@@ -15,7 +15,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: "mysql+pymysql://root:<MYSQL_ROOT_PASSWORD>@db/MR_data"
+      DATABASE_URL: "<YOUR_DATABASE_URL>/MR_data"
 
   frontend:
     build: ./client
@@ -23,7 +23,5 @@ services:
       - "3000:3000"
     depends_on:
       - api
-    environment:
-      REACT_APP_API_URL: "http://localhost:5000"
 volumes:
   db_data:

@@ -21,12 +21,16 @@ function DefectVisualization() {
   const fetchDefectData = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get("/defects", {
-        params: {
-          interval: interval,
-          category: category,
-        },
-      });
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/defects`,
+        {
+          params: {
+            interval: interval,
+            category: category,
+          },
+        }
+      );
+      console.log(response.data);
       setDefectData(response.data);
       setIsLoading(false);
     } catch (error) {
@@ -78,6 +82,10 @@ function DefectVisualization() {
       }
 
       if (category !== "Trending") {
+        if (!Array.isArray(defectData)) {
+          console.error("defectData is not an array", defectData);
+          setDefectData([]);
+        }
         const groupedData = defectData.reduce((accumulator, item) => {
           const key = item.category;
           if (!accumulator[key]) {

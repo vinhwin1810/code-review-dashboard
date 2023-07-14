@@ -1,5 +1,3 @@
-import re
-
 def extract_info_from_title(title):
     # Assuming the title is in the format "[Service] General information of merge request"
     try:
