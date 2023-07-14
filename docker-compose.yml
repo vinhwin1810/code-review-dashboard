@@ -3,8 +3,8 @@ services:
   db:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: <YOUR_PASSWORD>
-      MYSQL_DATABASE: MR_data #YOUR DATABASE NAME SHOULD BE MR_data
+      MYSQL_ROOT_PASSWORD: Counterstrike123
+      MYSQL_DATABASE: MR_data
     volumes:
       - db_data:/var/lib/mysql
 
@@ -15,7 +15,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: "<YOUR_DATABASE_URL>/MR_data"
+      DATABASE_URL: "mysql+pymysql://root:Counterstrike123@db/MR_data"
 
   frontend:
     build: ./client
