@@ -1,19 +1,33 @@
-from apscheduler.schedulers.background import BackgroundScheduler
-from flask import jsonify, request, Blueprint
+
+from flask import jsonify, Blueprint
 from controller.controller import fetch_merge_requests, get_merge_requests, get_defects, get_merge_request_discussions
 
-# Create the database and tables
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+import atexit
+
 bp = Blueprint('controller', __name__)
 
-# Initialize the scheduler
-scheduler = BackgroundScheduler()
-scheduler.start()
+def fetch_data():
+    scheduler = BackgroundScheduler()
+
+# Schedule the function to run every day at 00:00 (midnight)
+    scheduler.add_job(
+    func=fetch_merge_requests,
+    trigger=IntervalTrigger(days=1),
+    id='fetch_job',
+    name='Fetch merge requests from GitLab every day',
+    replace_existing=True)
+
+    # Start the scheduler
+    scheduler.start()
+
+    # Shut down the scheduler when exiting the app
+    atexit.register(lambda: scheduler.shutdown())
 
 @bp.route('/', methods=['GET'])
 def home():
    return jsonify({'message': 'MR Data API'})
-
-scheduler.add_job(fetch_merge_requests, 'interval', days=1)
 
 @bp.route('/merge_requests', methods=['GET'])
 def api_get_merge_requests():

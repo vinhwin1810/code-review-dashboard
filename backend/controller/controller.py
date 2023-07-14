@@ -5,7 +5,7 @@ from models.models import MRData, Discussion, db
 from gitlab import Gitlab
 from datetime import datetime
 from dateutil.parser import isoparse
-from .helper import extract_info_from_title, extract_info_from_discussion
+from .helper import extract_info_from_title, extract_info_from_note,extract_info_from_changes
 from sqlalchemy import func
 
 def fetch_merge_requests():
@@ -23,32 +23,45 @@ def fetch_merge_requests():
         # Extract the service type and general information from the title
         service_type, general_info = extract_info_from_title(mr.title)
 
+        # Fetch changes for the merge request
+        changes = mr.changes()
+        try:
+            defect_in_file_line, defect_description = extract_info_from_changes(changes)
+        except ValueError:
+            defect_in_file_line, defect_description = None, None
+
         merge_request = MRData(
             title=general_info,
             author=mr.author['name'],
             service_type=service_type,
+            defect_in_file_line=defect_in_file_line,
+            defect_description=defect_description,
             create_date=isoparse(mr.created_at),
             resolve_date=isoparse(mr.merged_at),
         )
         db.session.add(merge_request)
 
         # Fetch discussions for the merge request
-        discussions = mr.discussions.list()
+        notes = mr.notes.list()
 
-        for discussion in discussions:
-            # Extract the defect type label, defect severity, and detail from the discussion
-            defect_type_label, defect_severity, detail = extract_info_from_discussion(discussion)
+        for note in notes:
+            # Extract information from all the notes in the note
+            for note in notes:
+                # Extract the defect type label, defect severity, and detail from the note
+                defect_type_label, defect_severity, detail = extract_info_from_note(note)
 
-            discussion = Discussion(
-                merge_request=merge_request,
-                defect_type_label=defect_type_label,
-                defect_severity=defect_severity,
-                detail=detail
-            )
-            db.session.add(discussion)
+                note_data = Discussion(
+                    merge_request=merge_request,
+                    defect_type_label=defect_type_label,
+                    defect_severity=defect_severity,
+                    detail=detail
+                )
+                db.session.add(note_data)
 
     # Commit the changes to the database
     db.session.commit()
+
+
 
 def get_merge_requests():
     try:

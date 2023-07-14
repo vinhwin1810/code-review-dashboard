@@ -4,7 +4,7 @@ from api.api import bp
 from datetime import datetime
 from flask_cors import CORS
 from flask_migrate import Migrate
-from gitlab import Gitlab
+from api.api import fetch_data
 
 def create_app(config):
     app = Flask(__name__)
@@ -18,10 +18,10 @@ def create_app(config):
 
     app.register_blueprint(bp, url_prefix='/')
 
-
     # Create the database and tables
     with app.app_context():
         db.create_all()
+        fetch_data()
 
         # mr5 = MRData(
         # title="Merge Request 5",
@@ -54,9 +54,6 @@ def create_app(config):
 
         # db.session.add(mr5)
         # db.session.commit()
-
-    # with app.app_context():
-    #     db.drop_all()
 
     return app
 
