@@ -5,7 +5,7 @@ from models.models import MRData, Discussion, db
 from gitlab import Gitlab
 from datetime import datetime
 from dateutil.parser import isoparse
-from .helper import extract_info_from_title, extract_info_from_note,extract_info_from_changes
+from .helper import extract_info_from_title, extract_info_from_note
 from sqlalchemy import func
 
 def fetch_merge_requests():
@@ -15,52 +15,46 @@ def fetch_merge_requests():
     gl = Gitlab(gitlab_url, private_token=gitlab_token)
 
     # Fetch merge requests from the project
-    project_id = "47457661"
-    project = gl.projects.get(project_id)
-    merge_requests = project.mergerequests.list(state='merged')
+    project_ids = ["47457661"]
+    for project_id in project_ids:
+        project = gl.projects.get(project_id)
+        merge_requests = project.mergerequests.list(state='merged')
 
-    for mr in merge_requests:
-        # Extract the service type and general information from the title
-        service_type, general_info = extract_info_from_title(mr.title)
+        for mr in merge_requests:
+            # Extract the service type and general information from the title
+            service_type, general_info = extract_info_from_title(mr.title)
+            merge_request = MRData(
+                title=general_info,
+                author=mr.author['name'],
+                service_type=service_type,
+            )
+            db.session.add(merge_request)
 
-        # Fetch changes for the merge request
-        changes = mr.changes()
-        try:
-            defect_in_file_line, defect_description = extract_info_from_changes(changes)
-        except ValueError:
-            defect_in_file_line, defect_description = None, None
+            # Fetch discussions for the merge request
+            discussions = mr.discussions.list(all=True)
+            for discussion in discussions:
+                notes = discussion.attributes.get('notes')
 
-        merge_request = MRData(
-            title=general_info,
-            author=mr.author['name'],
-            service_type=service_type,
-            defect_in_file_line=defect_in_file_line,
-            defect_description=defect_description,
-            create_date=isoparse(mr.created_at),
-            resolve_date=isoparse(mr.merged_at),
-        )
-        db.session.add(merge_request)
+                for note in notes:
+                    info = extract_info_from_note(note['body'])
 
-        # Fetch discussions for the merge request
-        notes = mr.notes.list()
+                    if info:
+                        print(note)
+                        defect_type_label, defect_severity, detail = info
+                        note_data = Discussion(
+                            merge_request=merge_request,
+                            defect_type_label=defect_type_label,
+                            defect_severity=defect_severity,
+                            detail=note['body'],
+                            create_date=isoparse(note['created_at']),
+                            resolve_date=discussion.attributes.get('resolved_at'),
+                            detected_by=note['author']['username'],
+                            resolved_by=discussion.attributes.get('resolved_by')
+                        )
+                        db.session.add(note_data)
 
-        for note in notes:
-            # Extract information from all the notes in the note
-            for note in notes:
-                # Extract the defect type label, defect severity, and detail from the note
-                defect_type_label, defect_severity, detail = extract_info_from_note(note)
-
-                note_data = Discussion(
-                    merge_request=merge_request,
-                    defect_type_label=defect_type_label,
-                    defect_severity=defect_severity,
-                    detail=detail
-                )
-                db.session.add(note_data)
-
-    # Commit the changes to the database
-    db.session.commit()
-
+        # Commit the changes to the database
+        db.session.commit()
 
 
 def get_merge_requests():
@@ -70,22 +64,16 @@ def get_merge_requests():
         for mr in merge_requests:
             # Get all discussions associated with the merge request
             discussions = Discussion.query.filter_by(merge_request_id=mr.id).all()
-            discussions_output = []
             for discussion in discussions:
-                discussions_output.append({
-                    'defect_type_label': discussion.defect_type_label,
-                    'defect_severity': discussion.defect_severity,
-                    'detail': discussion.detail
-                })
-            output.append({
+                output.append({
                 'title': mr.title,
                 'author': mr.author,
                 'service_type': mr.service_type,
-                'create_date': mr.create_date.strftime('%Y-%m-%d %H:%M:%S') if mr.create_date else None,
-                'resolve_date': mr.resolve_date.strftime('%Y-%m-%d %H:%M:%S') if mr.resolve_date else None,
-                'defect_severity': mr.defect_severity,
-                'detected_by': mr.detected_by,
-                'discussions': discussions_output  # Include discussions here
+                'create_date': discussion.create_date.strftime('%Y-%m-%d %H:%M:%S') if discussion.create_date else None,
+                'resolve_date': discussion.resolve_date.strftime('%Y-%m-%d %H:%M:%S') if discussion.resolve_date else None,
+                'defect_severity': discussion.defect_severity,
+                'detected_by': discussion.detected_by,
+                'detail': discussion.detail
             })
         return jsonify(output)
     except Exception as e:
@@ -105,11 +93,11 @@ def get_defects():
 
         # Define the interval ranges based on the current date
         if interval == 'Year':
-            interval_range = func.concat(func.year(MRData.create_date), '-', func.month(MRData.create_date))
+            interval_range = func.concat(func.year(Discussion.create_date), '-', func.month(Discussion.create_date))
         elif interval == 'Quarter' or interval == 'Month':
-            interval_range = func.concat(func.year(MRData.create_date), '-', func.week(MRData.create_date))
+            interval_range = func.concat(func.year(Discussion.create_date), '-', func.week(Discussion.create_date))
         else:  # interval == 'Week'
-            interval_range = func.concat(func.year(MRData.create_date), '-', func.month(MRData.create_date), '-', func.day(MRData.create_date))
+            interval_range = func.concat(func.year(Discussion.create_date), '-', func.month(Discussion.create_date), '-', func.day(Discussion.create_date))
 
         # Define a default value for group_by_column
         group_by_column = None
@@ -118,17 +106,17 @@ def get_defects():
         if category == 'Trending':
             query = db.session.query(interval_range.label('interval'), 
                                      func.count().label('count')). \
-                filter(MRData.create_date <= current_date). \
+                filter(Discussion.create_date <= current_date). \
                 group_by(interval_range)
         else:
             if category == 'Author':
                 group_by_column = MRData.author
             elif category == 'Detected by':
-                group_by_column = MRData.detected_by
+                group_by_column = Discussion.detected_by
             elif category == 'Defect Type':
-                group_by_column = MRData.defect_type
+                group_by_column = Discussion.defect_type_label
             elif category == 'Defect Severity':
-                group_by_column = MRData.defect_severity
+                group_by_column = Discussion.defect_severity
             elif category == 'Service':
                 group_by_column = MRData.service_type
 
@@ -137,8 +125,9 @@ def get_defects():
                 return jsonify({'error': 'Invalid category'})
 
             query = db.session.query(interval_range.label('interval'), group_by_column.label('category'),
-                                     func.count().label('count')). \
-                filter(MRData.create_date <= current_date). \
+                                    func.count().label('count')). \
+                join(Discussion.merge_request). \
+                filter(Discussion.create_date <= current_date). \
                 group_by(interval_range). \
                 group_by(group_by_column)
 
@@ -155,20 +144,3 @@ def get_defects():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-def get_merge_request_discussions(merge_request_id):
-    try:
-        # Query database for discussions associated with the merge_request_id
-        discussions = Discussion.query.filter_by(merge_request_id=merge_request_id).all()
-        
-        # Serialize the discussions
-        output = []
-        for discussion in discussions:
-            output.append({
-                'defect_type_label': discussion.defect_type_label,
-                'defect_severity': discussion.defect_severity,
-                'detail': discussion.detail,
-            })
-
-        return jsonify(output)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500

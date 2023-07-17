@@ -1,6 +1,6 @@
 
 from flask import jsonify, Blueprint
-from controller.controller import fetch_merge_requests, get_merge_requests, get_defects, get_merge_request_discussions
+from controller.controller import fetch_merge_requests, get_merge_requests, get_defects
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
