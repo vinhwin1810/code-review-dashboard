@@ -8,6 +8,7 @@ from dateutil.parser import isoparse
 from .helper import extract_info_from_title, extract_info_from_note
 from sqlalchemy import func
 
+
 def fetch_merge_requests():
     # Create a GitLab client instance
     gitlab_url = os.getenv('GITLAB_URL')
@@ -15,10 +16,10 @@ def fetch_merge_requests():
     gl = Gitlab(gitlab_url, private_token=gitlab_token)
 
     # Fetch merge requests from the project
-    project_ids = ["47457661"]
+    project_ids = ["47457661", "46487137"]
     for project_id in project_ids:
         project = gl.projects.get(project_id)
-        merge_requests = project.mergerequests.list(state='merged')
+        merge_requests = project.mergerequests.list(scope='all')
 
         for mr in merge_requests:
             # Extract the service type and general information from the title
@@ -34,22 +35,20 @@ def fetch_merge_requests():
             discussions = mr.discussions.list(all=True)
             for discussion in discussions:
                 notes = discussion.attributes.get('notes')
-
                 for note in notes:
-                    info = extract_info_from_note(note['body'])
+                    info = extract_info_from_note(note['note'])
 
                     if info:
-                        print(note)
                         defect_type_label, defect_severity, detail = info
                         note_data = Discussion(
                             merge_request=merge_request,
                             defect_type_label=defect_type_label,
                             defect_severity=defect_severity,
-                            detail=note['body'],
+                            detail=f"[{defect_type_label}][{defect_severity}] {detail}]",
                             create_date=isoparse(note['created_at']),
                             resolve_date=discussion.attributes.get('resolved_at'),
                             detected_by=note['author']['username'],
-                            resolved_by=discussion.attributes.get('resolved_by')
+                            resolved_by=discussion.attributes.get('resolved_by')['username']
                         )
                         db.session.add(note_data)
 
@@ -62,7 +61,6 @@ def get_merge_requests():
         merge_requests = MRData.query.all()
         output = []
         for mr in merge_requests:
-            # Get all discussions associated with the merge request
             discussions = Discussion.query.filter_by(merge_request_id=mr.id).all()
             for discussion in discussions:
                 output.append({
@@ -93,12 +91,16 @@ def get_defects():
 
         # Define the interval ranges based on the current date
         if interval == 'Year':
-            interval_range = func.concat(func.year(Discussion.create_date), '-', func.month(Discussion.create_date))
-        elif interval == 'Quarter' or interval == 'Month':
-            interval_range = func.concat(func.year(Discussion.create_date), '-', func.week(Discussion.create_date))
+            interval_range = func.year(Discussion.create_date)
+        elif interval == 'Quarter':
+            interval_range = func.concat(func.year(Discussion.create_date), '-', 
+                                        func.ceil(func.month(Discussion.create_date) / 3))
+        elif interval == 'Month':
+            interval_range = func.concat(func.year(Discussion.create_date), '-', 
+                                        func.month(Discussion.create_date))
         else:  # interval == 'Week'
-            interval_range = func.concat(func.year(Discussion.create_date), '-', func.month(Discussion.create_date), '-', func.day(Discussion.create_date))
-
+            interval_range = func.concat(func.year(Discussion.create_date), '-',
+                                        func.week(Discussion.create_date))
         # Define a default value for group_by_column
         group_by_column = None
 

@@ -25,7 +25,7 @@ def extract_info_from_title(title):
 
 
 def extract_info_from_note(note):
-    pattern = r'\[(.*?)\] \[(.*?)\] (.*)'
+    pattern = r'~"([^"]+)"\s*~"([^"]+)"\s*(.*)'
     match = re.match(pattern, note)
     
     if match:
