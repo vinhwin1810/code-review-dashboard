@@ -9,30 +9,39 @@ from .helper import extract_info_from_title, extract_info_from_note
 from sqlalchemy import func
 
 
+import requests
+
+import os
+import requests
+from dateutil.parser import isoparse
+
 def fetch_merge_requests():
-    # Create a GitLab client instance
     gitlab_url = os.getenv('GITLAB_URL')
     gitlab_token = os.getenv('GITLAB_TOKEN')
-    gl = Gitlab(gitlab_url, private_token=gitlab_token)
+    headers = {"Private-Token": gitlab_token}
 
-    # Fetch merge requests from the project
     project_ids = ["47457661", "46487137"]
+
     for project_id in project_ids:
-        project = gl.projects.get(project_id)
-        merge_requests = project.mergerequests.list(scope='all')
+        # Get merge requests for the project
+        mr_url = f"{gitlab_url}/api/v4/projects/{project_id}/merge_requests"
+        response = requests.get(mr_url, headers=headers, params={"scope": "all"})
+        merge_requests = response.json()
 
         for mr in merge_requests:
-            # Extract the service type and general information from the title
-            service_type, general_info = extract_info_from_title(mr.title)
+            service_type, general_info = extract_info_from_title(mr["title"])
             merge_request = MRData(
                 title=general_info,
-                author=mr.author['name'],
+                author=mr["author"]["name"],
                 service_type=service_type,
             )
             db.session.add(merge_request)
 
             # Fetch discussions for the merge request
-            discussions = mr.discussions.list(all=True)
+            discussions_url = f"{gitlab_url}/api/v4/projects/{project_id}/merge_requests/{mr['iid']}/discussions"
+            discussions_response = requests.get(discussions_url, headers=headers)
+            discussions = discussions_response.json()
+
             for discussion in discussions:
                 notes = discussion.attributes.get('notes')
                 for note in notes:
@@ -48,9 +57,10 @@ def fetch_merge_requests():
                             create_date=isoparse(note['created_at']),
                             resolve_date=discussion.attributes.get('resolved_at'),
                             detected_by=note['author']['username'],
-                            resolved_by=discussion.attributes.get('resolved_by')['username']
+                            resolved_by=discussion.attributes.get('resolved_by')['username'] if discussion.attributes.get('resolved_by') else None
                         )
                         db.session.add(note_data)
+
 
         # Commit the changes to the database
         db.session.commit()

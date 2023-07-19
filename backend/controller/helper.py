@@ -38,3 +38,6 @@ def extract_info_from_note(note):
         return defect_type_label, defect_severity_label, detail_of_discussion
     else:
         return None
+    
+
+
