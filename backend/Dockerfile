@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y wget \
     && wget https://github.com/jwilder/dockerize/releases/download/v0.7.0/dockerize-linux-amd64-v0.7.0.tar.gz \
     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-v0.7.0.tar.gz \
     && rm dockerize-linux-amd64-v0.7.0.tar.gz
-ENV GITLAB_URL='<your_gitlab_url>'
-ENV GITLAB_TOKEN='<your_token>'
+ENV GITLAB_URL='https://gitlab.com'
+ENV GITLAB_TOKEN='glpat-eSxXeB7mstbgA3YLcdtH'
 ADD . .
 EXPOSE 5000
 

@@ -7,26 +7,22 @@ from datetime import datetime
 from dateutil.parser import isoparse
 from .helper import extract_info_from_title, extract_info_from_note
 from sqlalchemy import func
-
-
 import requests
 
-import os
-import requests
-from dateutil.parser import isoparse
 
 def fetch_merge_requests():
     gitlab_url = os.getenv('GITLAB_URL')
     gitlab_token = os.getenv('GITLAB_TOKEN')
     headers = {"Private-Token": gitlab_token}
 
-    project_ids = ["47457661", "46487137"]
+    project_ids = ["353","354","358"]
 
     for project_id in project_ids:
         # Get merge requests for the project
         mr_url = f"{gitlab_url}/api/v4/projects/{project_id}/merge_requests"
         response = requests.get(mr_url, headers=headers, params={"scope": "all"})
         merge_requests = response.json()
+        output = []
 
         for mr in merge_requests:
             service_type, general_info = extract_info_from_title(mr["title"])
@@ -36,6 +32,8 @@ def fetch_merge_requests():
                 service_type=service_type,
             )
             db.session.add(merge_request)
+            output.append(mr["iid"])
+           
 
             # Fetch discussions for the merge request
             discussions_url = f"{gitlab_url}/api/v4/projects/{project_id}/merge_requests/{mr['iid']}/discussions"
@@ -43,26 +41,44 @@ def fetch_merge_requests():
             discussions = discussions_response.json()
 
             for discussion in discussions:
-                notes = discussion.attributes.get('notes')
-                for note in notes:
-                    info = extract_info_from_note(note['note'])
-
-                    if info:
-                        defect_type_label, defect_severity, detail = info
-                        note_data = Discussion(
-                            merge_request=merge_request,
-                            defect_type_label=defect_type_label,
-                            defect_severity=defect_severity,
-                            detail=f"[{defect_type_label}][{defect_severity}] {detail}]",
-                            create_date=isoparse(note['created_at']),
-                            resolve_date=discussion.attributes.get('resolved_at'),
-                            detected_by=note['author']['username'],
-                            resolved_by=discussion.attributes.get('resolved_by')['username'] if discussion.attributes.get('resolved_by') else None
-                        )
-                        db.session.add(note_data)
-
+                info = discussion['notes'][0]
+                body = discussion["notes"][0]["body"]
+                if body.find('~\"CD::') != -1 and body.find('~\"DS::') != -1:
+                    print(body)
+                    tmp = body.split('"')
+                    if len(tmp) == 0:
+                        continue
+                    description = ""
+                    for i in range(4, len(tmp)):
+                        description += tmp[i]
+                    defect_type = tmp[1]
+                    defect_severity = tmp[3]
+                    created_date = str(info["created_at"])
+                    resolved_date = None
+                    try:
+                        if info["resolved"]:
+                            resolved_date = info["updated_at"]
+                    except:
+                        resolved_date = "none"
+                    detected_by = info["author"]["username"]
+                    try:
+                        resolved_by = info["resolved_by"]["username"]
+                    except:
+                        resolved_by = "none"
+                    note_data = Discussion(
+                        merge_request=merge_request,
+                        defect_type_label=defect_type,
+                        defect_severity=defect_severity,
+                        detail=description,
+                        create_date=isoparse(created_date),
+                        resolve_date = isoparse(resolved_date) if resolved_date and resolved_date != "none" else None,
+                        detected_by=detected_by,
+                        resolved_by=resolved_by
+                    )
+                    db.session.add(note_data)
 
         # Commit the changes to the database
+        print(len(output))
         db.session.commit()
 
 
