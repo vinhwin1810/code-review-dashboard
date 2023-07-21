@@ -39,5 +39,3 @@ def extract_info_from_note(note):
     else:
         return None
     
-
-

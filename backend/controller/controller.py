@@ -2,10 +2,9 @@ import os
 
 from flask import jsonify, request
 from models.models import MRData, Discussion, db
-from gitlab import Gitlab
 from datetime import datetime
 from dateutil.parser import isoparse
-from .helper import extract_info_from_title, extract_info_from_note
+from .helper import extract_info_from_title
 from sqlalchemy import func
 import requests
 
@@ -15,16 +14,16 @@ def fetch_merge_requests():
     gitlab_token = os.getenv('GITLAB_TOKEN')
     headers = {"Private-Token": gitlab_token}
 
-    project_ids = ["353","354","358"]
+    project_ids = ["358"]
 
     for project_id in project_ids:
         # Get merge requests for the project
-        mr_url = f"{gitlab_url}/api/v4/projects/{project_id}/merge_requests"
-        response = requests.get(mr_url, headers=headers, params={"scope": "all"})
+        mr_url = f"{gitlab_url}/api/v4/projects/{project_id}/merge_requests?per_page=100"
+        response = requests.get(mr_url, headers=headers, params={"scope": "all"},timeout=1000)
         merge_requests = response.json()
-        output = []
 
         for mr in merge_requests:
+            print(mr["iid"])
             service_type, general_info = extract_info_from_title(mr["title"])
             merge_request = MRData(
                 title=general_info,
@@ -32,11 +31,9 @@ def fetch_merge_requests():
                 service_type=service_type,
             )
             db.session.add(merge_request)
-            output.append(mr["iid"])
            
-
             # Fetch discussions for the merge request
-            discussions_url = f"{gitlab_url}/api/v4/projects/{project_id}/merge_requests/{mr['iid']}/discussions"
+            discussions_url = f"{gitlab_url}/api/v4/projects/{project_id}/merge_requests/{mr['iid']}/discussions?per_page=100"
             discussions_response = requests.get(discussions_url, headers=headers)
             discussions = discussions_response.json()
 
@@ -78,7 +75,6 @@ def fetch_merge_requests():
                     db.session.add(note_data)
 
         # Commit the changes to the database
-        print(len(output))
         db.session.commit()
 
 
