@@ -1,6 +1,6 @@
 ### CODE REVIEW DASHBOARD
 
-This application retrieves data from GitLab's API about Merge Requests and Discussions and presents it in a dashboard for a more comprehensive code review process.
+This application retrieves data from GitLab's API about Merge Requests and Discussions and presents it in a dashboard for a more comprehensive code review process. By looking at these charts, developers can grasp their team's code review instead of having to look through Gitlab long discussions. 
 
 ### Getting Started
 
