@@ -1,32 +1,26 @@
-### CODE REVIEW DASHBOARD
-
-This application retrieves data from GitLab's API about Merge Requests and Discussions and presents it in a dashboard for a more comprehensive code review process. By looking at these charts, developers can grasp their team's code review instead of having to look through Gitlab long discussions. 
-
 <!-- TABLE OF CONTENTS -->
 <details>
   <summary>Table of Contents</summary>
   <ol>
     <li>
       <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
     </li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="#configuration">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
+    <li><a href="#database-setup">Database Setup</a></li>
+    <li><a href="#environment-configuration">Environment Configuration</a></li>
+    <li><a href="#build-and-run">Build And Run</a></li>
   </ol>
 </details>
+
+### About The Project
+
+This application retrieves data from GitLab's API about Merge Requests and Discussions and presents it in a dashboard for a more comprehensive code review process. By looking at these charts, developers can grasp their team's code review instead of having to look through Gitlab long discussions. 
 
 
 ### Getting Started
