@@ -71,6 +71,3 @@ Build and start the services using Docker Compose with the command:
 docker-compose build
 docker-compose up
 ```
-
-### NOTICE:
-In file api.py of folder api in backend, under fetch_data() function, run the method fetch_merge_requests() to get all the previous merge requests and then delete the line. I have scheduled api to call the process once per day.
